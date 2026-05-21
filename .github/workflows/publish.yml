@@ -1,0 +1,81 @@
+name: Publish to npm
+
+# Triggers on any push to main that touches the package source or this
+# workflow. The job self-checks: if package.json's version is unchanged vs
+# what's already on npm, the publish is a no-op. So the release flow is:
+#
+#   1. Bump version in package.json (or `npm version patch`)
+#   2. Commit + push to main
+#   3. CI sees the version differs from npm and publishes WITH provenance
+#
+# Auth: OIDC trusted publishing — no stored NPM_TOKEN.
+# One-time setup on npmjs.com:
+#   1. https://www.npmjs.com/package/@freewebstore/cli/access
+#   2. "Add trusted publisher" → GitHub Actions
+#   3. Repository: freewebstore-online/cli
+#   4. Workflow filename: publish.yml
+#   5. (no environment)
+# That registration is what lets the OIDC token mint a publish-scoped npm
+# auth token at runtime, automatically attested with provenance.
+#
+# Vendored from fas/platform/.github/workflows/publish.yml (2026-05-22).
+# Simplified: single package here, not a matrix.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'tsconfig.json'
+      - '.github/workflows/publish.yml'
+  workflow_dispatch: # manual trigger from the Actions UI
+
+permissions:
+  contents: read
+  id-token: write # OIDC token for npm trusted publishing + provenance attestation
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Decide whether to publish
+        id: decide
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          LOCAL_VER=$(node -p "require('./package.json').version")
+          NPM_VER=$(npm view "$PKG_NAME" version 2>/dev/null || echo "0.0.0")
+          echo "$PKG_NAME — local=$LOCAL_VER  npm=$NPM_VER"
+          if [ "$LOCAL_VER" = "$NPM_VER" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "Version unchanged — skipping publish."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Version bumped ($NPM_VER → $LOCAL_VER) — will publish."
+          fi
+
+      - name: Publish via OIDC trusted publishing
+        if: steps.decide.outputs.publish == 'true'
+        # `pnpm publish` rewrites `workspace:*` deps to real versions at
+        # pack time (we don't have any today, but mirror the FAS pattern so
+        # the workflow stays correct if we add workspace deps later).
+        run: pnpm publish --access public --provenance --no-git-checks
