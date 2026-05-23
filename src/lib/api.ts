@@ -64,7 +64,7 @@ export async function apiRequest<T = unknown>(
       if (auth.v === 2 && auth.designer_token) {
         // New OAuth-based token
         headers.Authorization = `Bearer fws-designer:${auth.designer_token}`;
-      } else if (auth.installation_id) {
+      } else if (auth.v === 1 && auth.installation_id) {
         // Legacy App-installation token
         headers.Authorization = `Bearer fws-installation:${auth.installation_id}`;
       }

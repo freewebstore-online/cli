@@ -32,7 +32,8 @@ export const whoamiCommand = new Command("whoami")
       process.exit(1);
     }
     console.log(`github login:    @${auth.github_login}`);
-    console.log(`installation:    ${auth.installation_id}`);
+    if (auth.v === 1) console.log(`installation:    ${auth.installation_id}`);
+    console.log(`auth version:    v${auth.v}`);
     console.log(`admin base:      ${adminBase()}`);
     console.log(`logged in since: ${auth.saved_at}`);
 
