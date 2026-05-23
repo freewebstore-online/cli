@@ -8,7 +8,7 @@ cd sofia-bistro
 # vibecode index.html with Claude Code / Cursor / your editor of choice
 # add a 1280×720 preview.png
 npx @freewebstore/cli doctor    # local validation
-npx @freewebstore/cli login     # one-time GitHub App install
+npx @freewebstore/cli login     # one-time — opens browser to authorize
 npx @freewebstore/cli publish   # upload + create repo + queue for review
 npx @freewebstore/cli status sofia-bistro
 ```
@@ -19,11 +19,15 @@ npx @freewebstore/cli status sofia-bistro
 |---------|--------------|
 | `fws init <slug> --category=<c>` | Scaffold a new template directory |
 | `fws doctor [--path=<dir>]` | Validate the template locally before publish |
-| `fws login` | Install the FreeWebStore Templates GitHub App |
+| `fws login` | Authorize via GitHub App (installs on your personal account) |
 | `fws logout` | Clear local auth |
 | `fws whoami` | Show current auth state |
 | `fws publish [--path=<dir>]` | Upload the template for review |
 | `fws status <slug>` | Check the status of a published template |
+
+## How auth works
+
+`fws login` opens your browser to install the [FreeWebStore Templates](https://github.com/apps/freewebstore-templates) GitHub App on **your personal GitHub account**. You do NOT need to be a member of the `freewebstore-online` org — the platform creates template repos in the org on your behalf when you `fws publish`.
 
 ## What you get
 
@@ -43,7 +47,3 @@ When a small business picks your template, the FreeWebStore platform AI rewrites
 |-----|---------|
 | `FREEWEBSTORE_CONFIG_DIR` | Override `~/.freewebstore/` (useful in CI) |
 | `FREEWEBSTORE_ADMIN_BASE` | Override admin Worker URL (useful for local dev / staging) |
-
-## Status
-
-Scaffold + init + doctor + status + config are working. Login + publish wire through to the admin Worker but the admin side of GitHub App auth + provisioning ships in T2/T3.
