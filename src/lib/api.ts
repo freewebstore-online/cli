@@ -61,10 +61,13 @@ export async function apiRequest<T = unknown>(
   if (!opts.noAuth) {
     const auth = opts.auth !== undefined ? opts.auth : readAuth();
     if (auth) {
-      // Sent as a bearer token. The admin Worker exchanges the installation_id
-      // for a short-lived GitHub API token via its own JWT-signing path —
-      // the CLI never holds a GitHub API token directly.
-      headers.Authorization = `Bearer fws-installation:${auth.installation_id}`;
+      if (auth.v === 2 && auth.designer_token) {
+        // New OAuth-based token
+        headers.Authorization = `Bearer fws-designer:${auth.designer_token}`;
+      } else if (auth.installation_id) {
+        // Legacy App-installation token
+        headers.Authorization = `Bearer fws-installation:${auth.installation_id}`;
+      }
     }
   }
 
