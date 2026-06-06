@@ -43,6 +43,8 @@ export interface RequestOptions {
   noAuth?: boolean;
   /** AbortSignal for command-level timeouts. */
   signal?: AbortSignal;
+  /** Override the base URL (default: adminBase()). */
+  base?: string;
 }
 
 export async function apiRequest<T = unknown>(
@@ -51,7 +53,7 @@ export async function apiRequest<T = unknown>(
   body: unknown | undefined,
   opts: RequestOptions = {},
 ): Promise<ApiResponse<T>> {
-  const url = `${adminBase()}${path}`;
+  const url = `${opts.base ?? adminBase()}${path}`;
   const headers: Record<string, string> = {
     "User-Agent": USER_AGENT,
     Accept: "application/json",

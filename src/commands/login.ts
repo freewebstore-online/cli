@@ -20,7 +20,7 @@
 import { spawn } from "node:child_process";
 import { Command } from "commander";
 import { ApiCallError, apiRequest } from "../lib/api.js";
-import { adminBase, writeAuth } from "../lib/config.js";
+import { adminBase, agentBase, writeAuth } from "../lib/config.js";
 import { generatePairingCode } from "../lib/pairing.js";
 
 interface LoginOptions {
@@ -105,7 +105,7 @@ async function pollForCompletion(
       "POST",
       "/api/auth/exchange",
       { pairing_code: pairingCode },
-      { noAuth: true },
+      { noAuth: true, base: agentBase() },
     );
 
     if (res.ok && res.status === 200) {

@@ -11,7 +11,7 @@
 
 import { Command } from "commander";
 import { ApiCallError, apiCall } from "../lib/api.js";
-import { adminBase, authPath, readAuth } from "../lib/config.js";
+import { adminBase, agentBase, authPath, readAuth } from "../lib/config.js";
 
 interface RemoteIdentity {
   installation_id: string;
@@ -40,7 +40,7 @@ export const whoamiCommand = new Command("whoami")
     if (!opts.verify) return;
 
     try {
-      const remote = await apiCall<RemoteIdentity>("GET", "/api/auth/whoami");
+      const remote = await apiCall<RemoteIdentity>("GET", "/api/auth/whoami", undefined, { base: agentBase() });
       console.log("");
       console.log(`✓ admin confirmed @${remote.github_login}`);
       console.log(`  templates:     ${remote.template_count}`);

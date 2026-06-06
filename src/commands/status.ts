@@ -11,6 +11,7 @@
 
 import { Command } from "commander";
 import { ApiCallError, apiCall } from "../lib/api.js";
+import { agentBase } from "../lib/config.js";
 
 interface TemplateView {
   slug: string;
@@ -34,6 +35,7 @@ export const statusCommand = new Command("status")
         undefined,
         {
           noAuth: true,
+          base: agentBase(),
         },
       );
       console.log(`slug:           ${t.slug}`);

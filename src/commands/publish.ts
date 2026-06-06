@@ -24,7 +24,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Command } from "commander";
 import { ApiCallError, apiCall } from "../lib/api.js";
-import { readAuth } from "../lib/config.js";
+import { agentBase, readAuth } from "../lib/config.js";
 
 interface PublishOptions {
   path?: string;
@@ -108,7 +108,7 @@ export const publishCommand = new Command("publish")
         slot_schema_version: config.slot_schema_version,
         archive_b64,
         author: config.author,
-      });
+      }, { base: agentBase() });
 
       console.log(`✓ ${res.status}`);
       if (res.preview_url) console.log(`  preview: ${res.preview_url}`);

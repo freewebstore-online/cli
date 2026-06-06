@@ -11,6 +11,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
 export const DEFAULT_ADMIN_BASE = "https://admin.freewebstore.online";
+export const DEFAULT_AGENT_BASE = "https://agent.freewebstore.online";
 
 export interface AuthConfigV2 {
   v: 2;
@@ -73,4 +74,10 @@ export function adminBase(): string {
   const auth = readAuth();
   if (auth?.admin_base) return auth.admin_base;
   return DEFAULT_ADMIN_BASE;
+}
+
+/** Resolve the agent base URL (for CLI auth exchange + whoami). */
+export function agentBase(): string {
+  if (process.env.FREEWEBSTORE_AGENT_BASE) return process.env.FREEWEBSTORE_AGENT_BASE;
+  return DEFAULT_AGENT_BASE;
 }
