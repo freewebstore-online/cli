@@ -109,6 +109,9 @@ async function pollForCompletion(
     );
 
     if (res.ok && res.status === 200) {
+      if (!res.body?.github_login || !res.body?.designer_token) {
+        throw new Error("exchange returned 200 but missing github_login or designer_token");
+      }
       return res.body;
     }
     if (res.ok && res.status === 202) {

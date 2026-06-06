@@ -96,7 +96,14 @@ export async function apiRequest<T = unknown>(
     try {
       parsed = JSON.parse(text);
     } catch {
-      parsed = text;
+      // Non-JSON response (e.g. CF Access HTML page, error page).
+      // Even on 200, treat as an error — our API always returns JSON.
+      return {
+        ok: false,
+        status: res.status,
+        body: null,
+        network_error: `expected JSON but got ${res.headers.get("content-type") || "unknown"} (status ${res.status})`,
+      };
     }
   }
 

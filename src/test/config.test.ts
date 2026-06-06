@@ -12,10 +12,12 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   type AuthConfig,
   adminBase,
+  agentBase,
   authPath,
   clearAuth,
   configDir,
   DEFAULT_ADMIN_BASE,
+  DEFAULT_AGENT_BASE,
   readAuth,
   writeAuth,
 } from "../lib/config.js";
@@ -23,13 +25,16 @@ import {
 let tmp: string;
 let originalEnv: string | undefined;
 let originalBase: string | undefined;
+let originalAgentBase: string | undefined;
 
 beforeEach(() => {
   tmp = mkdtempSync(join(tmpdir(), "fws-cli-test-"));
   originalEnv = process.env.FREEWEBSTORE_CONFIG_DIR;
   originalBase = process.env.FREEWEBSTORE_ADMIN_BASE;
+  originalAgentBase = process.env.FREEWEBSTORE_AGENT_BASE;
   process.env.FREEWEBSTORE_CONFIG_DIR = tmp;
   delete process.env.FREEWEBSTORE_ADMIN_BASE;
+  delete process.env.FREEWEBSTORE_AGENT_BASE;
 });
 
 afterEach(() => {
@@ -37,6 +42,8 @@ afterEach(() => {
   else process.env.FREEWEBSTORE_CONFIG_DIR = originalEnv;
   if (originalBase === undefined) delete process.env.FREEWEBSTORE_ADMIN_BASE;
   else process.env.FREEWEBSTORE_ADMIN_BASE = originalBase;
+  if (originalAgentBase === undefined) delete process.env.FREEWEBSTORE_AGENT_BASE;
+  else process.env.FREEWEBSTORE_AGENT_BASE = originalAgentBase;
   rmSync(tmp, { recursive: true, force: true });
 });
 
@@ -107,5 +114,20 @@ describe("adminBase resolution", () => {
     writeAuth(sampleAuth());
     process.env.FREEWEBSTORE_ADMIN_BASE = "http://localhost:8787";
     expect(adminBase()).toBe("http://localhost:8787");
+  });
+});
+
+describe("agentBase resolution", () => {
+  it("falls back to the production default", () => {
+    expect(agentBase()).toBe(DEFAULT_AGENT_BASE);
+  });
+
+  it("FREEWEBSTORE_AGENT_BASE env overrides default", () => {
+    process.env.FREEWEBSTORE_AGENT_BASE = "http://localhost:8788";
+    expect(agentBase()).toBe("http://localhost:8788");
+  });
+
+  it("agent and admin bases are different domains", () => {
+    expect(agentBase()).not.toBe(adminBase());
   });
 });
