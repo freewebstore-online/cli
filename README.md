@@ -31,9 +31,11 @@ npx @freewebstore/cli status sofia-bistro
 
 ## What you get
 
-- A small business uses your template → site footer credits you ("Template by @your-handle")
-- Every adopting business shows up on your `/designers/<handle>` page on freewebstore.online
-- MIT license, no payouts, no exposure-currency hand-waving — the credit *is* the credit
+- **Clients find you.** Businesses that outgrow their free site come to you for custom work — on FreeWebStore or full CMS builds on [ProWebStore](https://prowebstore.online).
+- **Recognition.** Every adopting site's footer credits you ("Template by @your-handle"), linked to your designer profile on freewebstore.online.
+- **Social proof.** Live adoption counter on your designer page — updated daily.
+- **Portfolio.** Permanent preview URL at `templates.freewebstore.online/{slug}/`. Share it, embed it, it doesn't expire.
+- **Zero cost.** You volunteer the HTML; the platform handles hosting, deploy, AI customization, and client matching.
 
 ## How customization works
 
