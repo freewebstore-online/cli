@@ -102,13 +102,18 @@ export const publishCommand = new Command("publish")
     console.log(`Publishing ${config.slug} (${config.category}) to FreeWebStore...`);
 
     try {
-      const res = await apiCall<PublishResponse>("POST", "/api/publish-template", {
-        slug: config.slug,
-        category: config.category,
-        slot_schema_version: config.slot_schema_version,
-        archive_b64,
-        author: config.author,
-      }, { base: agentBase() });
+      const res = await apiCall<PublishResponse>(
+        "POST",
+        "/api/publish-template",
+        {
+          slug: config.slug,
+          category: config.category,
+          slot_schema_version: config.slot_schema_version,
+          archive_b64,
+          author: config.author,
+        },
+        { base: agentBase() },
+      );
 
       console.log(`✓ ${res.slug ?? config.slug} ${res.status ?? "submitted"}`);
       if (res.preview_url) console.log(`  preview: ${res.preview_url}`);
