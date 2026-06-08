@@ -38,13 +38,13 @@ export const statusCommand = new Command("status")
           base: agentBase(),
         },
       );
-      console.log(`slug:           ${t.slug}`);
-      console.log(`category:       ${t.category}`);
-      console.log(`author:         @${t.author.handle} (${t.author.name})`);
-      console.log(`preview:        ${t.preview_url}`);
-      console.log(`repo:           ${t.repo_url}`);
-      console.log(`slot schema:    v${t.slot_schema_version}`);
-      console.log(`active sites:   ${t.active_sites}`);
+      console.log(`slug:           ${t.slug ?? slug}`);
+      console.log(`category:       ${t.category ?? "unknown"}`);
+      console.log(`author:         @${t.author?.handle ?? "unknown"} (${t.author?.name ?? ""})`);
+      if (t.preview_url) console.log(`preview:        ${t.preview_url}`);
+      if (t.repo_url) console.log(`repo:           ${t.repo_url}`);
+      if (t.slot_schema_version != null) console.log(`slot schema:    v${t.slot_schema_version}`);
+      console.log(`active sites:   ${t.active_sites ?? 0}`);
       if (t.approved_at) console.log(`approved at:    ${t.approved_at}`);
       console.log("");
       console.log("status: public");

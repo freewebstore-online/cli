@@ -110,7 +110,7 @@ export const publishCommand = new Command("publish")
         author: config.author,
       }, { base: agentBase() });
 
-      console.log(`✓ ${res.status}`);
+      console.log(`✓ ${res.slug ?? config.slug} ${res.status ?? "submitted"}`);
       if (res.preview_url) console.log(`  preview: ${res.preview_url}`);
       if (res.poll_url) console.log(`  poll:    ${res.poll_url}`);
       if (res.message) console.log(`  ${res.message}`);

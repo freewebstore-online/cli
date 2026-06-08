@@ -31,6 +31,10 @@ export const whoamiCommand = new Command("whoami")
       console.log(`(auth file would be at ${authPath()})`);
       process.exit(1);
     }
+    if (!auth.github_login) {
+      console.error("error: auth.json is corrupted (missing github_login) — run `fws login` again");
+      process.exit(2);
+    }
     console.log(`github login:    @${auth.github_login}`);
     if (auth.v === 1) console.log(`installation:    ${auth.installation_id}`);
     console.log(`auth version:    v${auth.v}`);
