@@ -17,7 +17,7 @@
 import type { AuthConfig } from "./config.js";
 import { adminBase, readAuth } from "./config.js";
 
-const USER_AGENT = "@freewebstore/cli/0.1.3";
+const USER_AGENT = "@freewebstore/cli/0.1.4";
 
 export interface ApiOk<T> {
   ok: true;
