@@ -23,7 +23,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { Command } from "commander";
-import { ApiCallError, apiCall } from "../lib/api.js";
+import { ApiCallError, apiCall, apiRequest } from "../lib/api.js";
 import { agentBase, readAuth } from "../lib/config.js";
 
 interface PublishOptions {
@@ -115,9 +115,41 @@ export const publishCommand = new Command("publish")
         { base: agentBase() },
       );
 
-      console.log(`✓ ${res.slug ?? config.slug} ${res.status ?? "submitted"}`);
+      console.log(`✓ ${res.slug ?? config.slug} uploaded`);
       if (res.preview_url) console.log(`  preview: ${res.preview_url}`);
-      if (res.poll_url) console.log(`  poll:    ${res.poll_url}`);
+      console.log("");
+      console.log("Running compliance checks...");
+
+      // Poll for compliance result (up to 30s)
+      const pollSlug = config.slug;
+      const pollBase = agentBase();
+      for (let i = 0; i < 15; i++) {
+        await new Promise((r) => setTimeout(r, 2000));
+        try {
+          const status = await apiRequest<{ status?: string; compliance_failures?: string[] }>(
+            "GET",
+            `/api/templates/${encodeURIComponent(pollSlug)}`,
+            undefined,
+            { noAuth: true, base: pollBase },
+          );
+          if (!status.ok || !status.body) continue;
+          const t = status.body;
+          if (t.status === "public") {
+            console.log("✓ Compliance passed — template is PUBLIC");
+            console.log(`  live: ${res.preview_url ?? `https://agent.freewebstore.online/api/templates/${pollSlug}/preview`}`);
+            break;
+          }
+          if (t.status === "pending_compliance" && t.compliance_failures?.length) {
+            console.log("✗ Compliance FAILED:");
+            for (const f of t.compliance_failures) {
+              console.log(`  ✗ ${f}`);
+            }
+            console.log("");
+            console.log("Fix these issues and run `fws publish` again.");
+            process.exit(1);
+          }
+        } catch { /* keep polling */ }
+      }
       if (res.message) console.log(`  ${res.message}`);
     } catch (e) {
       if (e instanceof ApiCallError) {

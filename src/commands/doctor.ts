@@ -97,10 +97,18 @@ export const doctorCommand = new Command("doctor")
       status: existsSync(resolve(dir, "tailwind.config.js")) ? "pass" : "fail",
     });
 
-    checks.push({
-      name: "README.md exists",
-      status: existsSync(resolve(dir, "README.md")) ? "pass" : "fail",
-    });
+    const readmePath = resolve(dir, "README.md");
+    if (!existsSync(readmePath)) {
+      checks.push({ name: "README.md exists", status: "fail" });
+    } else {
+      checks.push({ name: "README.md exists", status: "pass" });
+      const readme = readFileSync(readmePath, "utf8");
+      if (!readme.toLowerCase().includes("mit")) {
+        checks.push({ name: "README mentions MIT license", status: "fail", message: "server compliance requires 'MIT' in README" });
+      } else {
+        checks.push({ name: "README mentions MIT license", status: "pass" });
+      }
+    }
 
     report(checks);
     const failed = checks.filter((c) => c.status === "fail").length;
@@ -154,23 +162,61 @@ function checkHtml(html: string, out: Check[]): void {
     out.push({ name: "index.html has a doctype", status: "pass" });
   }
 
+  // Semantic HTML — matches server compliance checkSemanticHTML
+  const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
+  if (h1Count === 0) {
+    out.push({ name: "exactly one <h1>", status: "fail", message: "no <h1> found" });
+  } else if (h1Count > 1) {
+    out.push({ name: "exactly one <h1>", status: "fail", message: `found ${h1Count} <h1> elements` });
+  } else {
+    out.push({ name: "exactly one <h1>", status: "pass" });
+  }
+
+  const imgTags = html.match(/<img\b[^>]*>/gis) || [];
+  const missingAlt = imgTags.filter((tag) => !/\balt\s*=/i.test(tag));
+  if (missingAlt.length > 0) {
+    out.push({ name: "all <img> have alt", status: "fail", message: `${missingAlt.length} <img> missing alt attribute` });
+  } else if (imgTags.length > 0) {
+    out.push({ name: `all ${imgTags.length} <img> have alt`, status: "pass" });
+  }
+
+  // No inline styles — matches server compliance checkNoInlineStyles
+  const styleBlocks = html.match(/<style\b[^>]*>([\s\S]*?)<\/style>/gi) || [];
+  for (const block of styleBlocks) {
+    const inner = block.replace(/<style\b[^>]*>/i, "").replace(/<\/style>/i, "").trim();
+    if (inner && !inner.includes("@tailwind") && !inner.includes("tailwindcss")) {
+      out.push({ name: "no custom <style> blocks", status: "fail", message: "use Tailwind utility classes only" });
+      break;
+    }
+  }
+  if (!styleBlocks.length || !out.some((c) => c.name === "no custom <style> blocks")) {
+    out.push({ name: "no custom <style> blocks", status: "pass" });
+  }
+
+  // No inline scripts — matches server compliance checkExternalScripts
+  const inlineScripts = html.match(/<script\b(?![^>]*\bsrc\s*=)[^>]*>([\s\S]*?)<\/script>/gi) || [];
+  for (const block of inlineScripts) {
+    const inner = block.replace(/<script\b[^>]*>/i, "").replace(/<\/script>/i, "").trim();
+    if (inner && !inner.toLowerCase().includes("tailwind")) {
+      out.push({ name: "no inline scripts (except Tailwind config)", status: "fail" });
+      break;
+    }
+  }
+  if (!out.some((c) => c.name === "no inline scripts (except Tailwind config)")) {
+    out.push({ name: "no inline scripts (except Tailwind config)", status: "pass" });
+  }
+
   const slotCount = (html.match(/data-fws-slot=/g) ?? []).length;
   if (slotCount === 0) {
     out.push({
-      name: "index.html has at least one slot marker",
+      name: "index.html has slot markers",
       status: "fail",
-      message:
-        "no `data-fws-slot` attributes found — without these, the platform AI has to infer structure (less reliable). Add slot markers per slots.md.",
+      message: "no `data-fws-slot` found — add slot markers per slots.md",
     });
   } else {
-    out.push({
-      name: `index.html has ${slotCount} slot markers`,
-      status: "pass",
-    });
+    out.push({ name: `index.html has ${slotCount} slot markers`, status: "pass" });
   }
 
-  // Disallow external scripts except the Tailwind CDN. Other external
-  // scripts are a compliance fail server-side too.
   const externalScripts = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/g)]
     .map((m) => m[1])
     .filter((src) => /^https?:\/\//.test(src))
