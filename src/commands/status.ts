@@ -21,6 +21,7 @@ interface TemplateResponse {
   slot_schema_version?: number;
   active_sites?: number;
   approved_at?: string;
+  compliance_failures?: string[];
 }
 
 export const statusCommand = new Command("status")
@@ -47,8 +48,15 @@ export const statusCommand = new Command("status")
 
       if (status === "pending_compliance") {
         console.log("");
-        console.log("Compliance checks are running. Template will go public automatically once they pass.");
-        console.log("Re-run `fws status` in a minute.");
+        if (t.compliance_failures?.length) {
+          console.log("Compliance FAILED. Fix these issues and re-publish:");
+          for (const f of t.compliance_failures) {
+            console.log(`  ✗ ${f}`);
+          }
+        } else {
+          console.log("Compliance checks are running. Template will go public automatically once they pass.");
+          console.log("Re-run `fws status` in a minute.");
+        }
         process.exit(1);
       }
 
