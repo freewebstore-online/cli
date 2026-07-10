@@ -8,10 +8,11 @@
  * code can be read off a terminal aloud during ops debugging.
  */
 
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // skip O/I/L/0/1
 const CODE_LEN = 12;
+const VERIFIER_BYTES = 32; // 256 bits of entropy
 
 export function generatePairingCode(): string {
   // Match the admin-side pattern `^[A-Z0-9]{12}$`. The skip-list above
@@ -23,4 +24,22 @@ export function generatePairingCode(): string {
     out += ALPHABET[bytes[i] % ALPHABET.length];
   }
   return out;
+}
+
+/** PKCE-style verifier — a high-entropy secret held ONLY by the CLI.
+ *  Sent raw to /api/auth/exchange to prove the CLI started the flow. It
+ *  MUST NOT appear in the browser URL. base64url, no padding. */
+export function generateVerifier(): string {
+  return base64url(randomBytes(VERIFIER_BYTES));
+}
+
+/** challenge = base64url(sha256(verifier)). Safe to send through the
+ *  browser + GitHub in the OAuth `state`-adjacent query param — it's a
+ *  one-way hash of the secret. */
+export function computeChallenge(verifier: string): string {
+  return base64url(createHash("sha256").update(verifier).digest());
+}
+
+function base64url(buf: Buffer): string {
+  return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }

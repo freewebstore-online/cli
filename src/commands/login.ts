@@ -21,7 +21,7 @@ import { spawn } from "node:child_process";
 import { Command } from "commander";
 import { ApiCallError, apiRequest } from "../lib/api.js";
 import { adminBase, agentBase, writeAuth } from "../lib/config.js";
-import { generatePairingCode } from "../lib/pairing.js";
+import { computeChallenge, generatePairingCode, generateVerifier } from "../lib/pairing.js";
 
 interface LoginOptions {
   noBrowser?: boolean;
@@ -37,7 +37,11 @@ export const loginCommand = new Command("login")
   .option("--timeout <seconds>", "Polling timeout in seconds (default 300)")
   .action(async (opts: LoginOptions) => {
     const code = generatePairingCode();
-    const loginUrl = `${adminBase()}/api/auth/login?code=${code}`;
+    // PKCE-style binding: the verifier is a secret held only by this CLI
+    // process. Only its hash (the challenge) travels through the browser.
+    const verifier = generateVerifier();
+    const challenge = computeChallenge(verifier);
+    const loginUrl = `${adminBase()}/api/auth/login?code=${code}&challenge=${encodeURIComponent(challenge)}`;
     const timeoutSeconds = Number.parseInt(opts.timeout ?? String(DEFAULT_TIMEOUT_SECONDS), 10);
     if (!Number.isFinite(timeoutSeconds) || timeoutSeconds < 10 || timeoutSeconds > 3600) {
       console.error("error: --timeout must be 10-3600 seconds");
@@ -59,7 +63,7 @@ export const loginCommand = new Command("login")
     }
 
     try {
-      const identity = await pollForCompletion(code, timeoutSeconds);
+      const identity = await pollForCompletion(code, verifier, timeoutSeconds);
       writeAuth({
         v: 2,
         github_login: identity.github_login,
@@ -95,6 +99,7 @@ interface CompletedIdentity {
 
 async function pollForCompletion(
   pairingCode: string,
+  verifier: string,
   timeoutSeconds: number,
 ): Promise<CompletedIdentity> {
   const deadline = Date.now() + timeoutSeconds * 1000;
@@ -104,7 +109,7 @@ async function pollForCompletion(
     const res = await apiRequest<CompletedIdentity>(
       "POST",
       "/api/auth/exchange",
-      { pairing_code: pairingCode },
+      { pairing_code: pairingCode, verifier },
       { noAuth: true, base: agentBase() },
     );
 
