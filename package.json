@@ -1,6 +1,6 @@
 {
   "name": "@freewebstore/cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "license": "MIT",
   "description": "FreeWebStore CLI — vibecode an HTML+Tailwind template, get credit on every small business site that uses it.",
   "repository": {
