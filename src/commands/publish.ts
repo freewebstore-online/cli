@@ -77,6 +77,14 @@ export const publishCommand = new Command("publish")
       console.error("error: preview.png not found — a 1280×720 PNG hero shot is required");
       process.exit(2);
     }
+    // These are read unconditionally into the archive below — guard them here so
+    // a missing file is a clean error, not a raw ENOENT crash.
+    for (const required of ["tailwind.config.js", "README.md"]) {
+      if (!existsSync(resolve(dir, required))) {
+        console.error(`error: ${required} not found — run \`fws doctor\` to see what's missing`);
+        process.exit(2);
+      }
+    }
 
     const auth = readAuth();
     if (!auth) {
@@ -136,7 +144,9 @@ export const publishCommand = new Command("publish")
           const t = status.body;
           if (t.status === "public") {
             console.log("✓ Compliance passed — template is PUBLIC");
-            console.log(`  live: ${res.preview_url ?? `https://agent.freewebstore.online/api/templates/${pollSlug}/preview`}`);
+            console.log(
+              `  live: ${res.preview_url ?? `https://agent.freewebstore.online/api/templates/${pollSlug}/preview`}`,
+            );
             break;
           }
           if (t.status === "pending_compliance" && t.compliance_failures?.length) {
@@ -148,7 +158,9 @@ export const publishCommand = new Command("publish")
             console.log("Fix these issues and run `fws publish` again.");
             process.exit(1);
           }
-        } catch { /* keep polling */ }
+        } catch {
+          /* keep polling */
+        }
       }
       if (res.message) console.log(`  ${res.message}`);
     } catch (e) {
