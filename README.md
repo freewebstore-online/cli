@@ -34,7 +34,7 @@ npx @freewebstore/cli status sofia-bistro
 - **Clients find you.** Businesses that outgrow their free site come to you for custom work — on FreeWebStore or full CMS builds on [ProWebStore](https://prowebstore.online).
 - **Recognition.** Every adopting site's footer credits you ("Template by @your-handle"), linked to your designer profile on freewebstore.online.
 - **Social proof.** Live adoption counter on your designer page — updated daily.
-- **Portfolio.** Permanent preview URL at `templates.freewebstore.online/{slug}/`. Share it, embed it, it doesn't expire.
+- **Portfolio.** Permanent preview URL at `agent.freewebstore.online/api/templates/{slug}/preview`. Share it, embed it, it doesn't expire.
 - **Zero cost.** You volunteer the HTML; the platform handles hosting, deploy, AI customization, and client matching.
 
 ## How customization works
