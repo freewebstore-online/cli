@@ -104,7 +104,11 @@ export const doctorCommand = new Command("doctor")
       checks.push({ name: "README.md exists", status: "pass" });
       const readme = readFileSync(readmePath, "utf8");
       if (!readme.toLowerCase().includes("mit")) {
-        checks.push({ name: "README mentions MIT license", status: "fail", message: "server compliance requires 'MIT' in README" });
+        checks.push({
+          name: "README mentions MIT license",
+          status: "fail",
+          message: "server compliance requires 'MIT' in README",
+        });
       } else {
         checks.push({ name: "README mentions MIT license", status: "pass" });
       }
@@ -167,7 +171,11 @@ function checkHtml(html: string, out: Check[]): void {
   if (h1Count === 0) {
     out.push({ name: "exactly one <h1>", status: "fail", message: "no <h1> found" });
   } else if (h1Count > 1) {
-    out.push({ name: "exactly one <h1>", status: "fail", message: `found ${h1Count} <h1> elements` });
+    out.push({
+      name: "exactly one <h1>",
+      status: "fail",
+      message: `found ${h1Count} <h1> elements`,
+    });
   } else {
     out.push({ name: "exactly one <h1>", status: "pass" });
   }
@@ -175,7 +183,11 @@ function checkHtml(html: string, out: Check[]): void {
   const imgTags = html.match(/<img\b[^>]*>/gis) || [];
   const missingAlt = imgTags.filter((tag) => !/\balt\s*=/i.test(tag));
   if (missingAlt.length > 0) {
-    out.push({ name: "all <img> have alt", status: "fail", message: `${missingAlt.length} <img> missing alt attribute` });
+    out.push({
+      name: "all <img> have alt",
+      status: "fail",
+      message: `${missingAlt.length} <img> missing alt attribute`,
+    });
   } else if (imgTags.length > 0) {
     out.push({ name: `all ${imgTags.length} <img> have alt`, status: "pass" });
   }
@@ -183,9 +195,16 @@ function checkHtml(html: string, out: Check[]): void {
   // No inline styles — matches server compliance checkNoInlineStyles
   const styleBlocks = html.match(/<style\b[^>]*>([\s\S]*?)<\/style>/gi) || [];
   for (const block of styleBlocks) {
-    const inner = block.replace(/<style\b[^>]*>/i, "").replace(/<\/style>/i, "").trim();
+    const inner = block
+      .replace(/<style\b[^>]*>/i, "")
+      .replace(/<\/style>/i, "")
+      .trim();
     if (inner && !inner.includes("@tailwind") && !inner.includes("tailwindcss")) {
-      out.push({ name: "no custom <style> blocks", status: "fail", message: "use Tailwind utility classes only" });
+      out.push({
+        name: "no custom <style> blocks",
+        status: "fail",
+        message: "use Tailwind utility classes only",
+      });
       break;
     }
   }
@@ -196,7 +215,10 @@ function checkHtml(html: string, out: Check[]): void {
   // No inline scripts — matches server compliance checkExternalScripts
   const inlineScripts = html.match(/<script\b(?![^>]*\bsrc\s*=)[^>]*>([\s\S]*?)<\/script>/gi) || [];
   for (const block of inlineScripts) {
-    const inner = block.replace(/<script\b[^>]*>/i, "").replace(/<\/script>/i, "").trim();
+    const inner = block
+      .replace(/<script\b[^>]*>/i, "")
+      .replace(/<\/script>/i, "")
+      .trim();
     if (inner && !inner.toLowerCase().includes("tailwind")) {
       out.push({ name: "no inline scripts (except Tailwind config)", status: "fail" });
       break;
@@ -230,6 +252,60 @@ function checkHtml(html: string, out: Check[]): void {
   } else {
     out.push({ name: "no external scripts (except Tailwind CDN)", status: "pass" });
   }
+
+  checkContactForm(html, out);
+}
+
+/** A contact form that collects details but is not wired to the platform (#71).
+ *
+ *  This is the check whose absence let 15 of 16 published templates ship forms
+ *  that silently discard enquiries — some with no <form> element at all, one
+ *  posting to `mailto:hello@devstudio.com`, an address belonging to nobody. The
+ *  business believes it is collecting leads and is not, and nothing anywhere
+ *  says otherwise.
+ *
+ *  Only templates that *look* like they collect enquiries are judged: a search
+ *  box or a newsletter signup is not a contact form, and flagging those would
+ *  train designers to ignore the check. */
+function checkContactForm(html: string, out: Check[]): void {
+  const NAME = "contact form is wired to the platform";
+
+  const hasTextarea = /<textarea\b/i.test(html);
+  const hasEmailInput = /<input[^>]*type=["']email["']/i.test(html);
+  if (!hasTextarea && !hasEmailInput) return; // no enquiry capture — nothing to check
+
+  const wiredForm = /<form\b[^>]*class=["'][^"']*fws-contact-form/i.test(html);
+  if (!wiredForm) {
+    const mailto = /<form\b[^>]*action=["']mailto:/i.test(html);
+    const anyForm = /<form\b/i.test(html);
+    out.push({
+      name: NAME,
+      status: "fail",
+      message: mailto
+        ? 'form posts to a mailto: address — enquiries go to whatever address is hardcoded, not the site owner. Use <form class="fws-contact-form"> and drop the action.'
+        : anyForm
+          ? 'add class="fws-contact-form" to the <form> and remove any action/method, or submissions are lost'
+          : 'inputs are not inside a <form class="fws-contact-form">, so nothing is ever submitted',
+    });
+    return;
+  }
+
+  // Wired, but the endpoint requires all three: name, a valid email, and a
+  // message. Missing any one means every submission is rejected with an error
+  // the visitor cannot act on.
+  const missing = (["name", "email", "message"] as const).filter(
+    (f) => !new RegExp(`name=["']${f}["']`, "i").test(html),
+  );
+  if (missing.length > 0) {
+    out.push({
+      name: NAME,
+      status: "fail",
+      message: `form is wired but has no field named ${missing.join(", ")} — the enquiry endpoint requires name, email and message, so every submission would be rejected`,
+    });
+    return;
+  }
+
+  out.push({ name: NAME, status: "pass" });
 }
 
 function isPng(path: string): boolean {
