@@ -54,7 +54,9 @@ export const statusCommand = new Command("status")
             console.log(`  ✗ ${f}`);
           }
         } else {
-          console.log("Compliance checks are running. Template will go public automatically once they pass.");
+          console.log(
+            "Compliance checks are running. Template will go public automatically once they pass.",
+          );
           console.log("Re-run `fws status` in a minute.");
         }
         process.exit(1);
